@@ -8,7 +8,7 @@ public class SamplesArray
         //IllustrateArrayAsReadOnly();
         //IllustrateClone();
         //IllustrateForeach();
-        IllustrateBinarySearch();
+        //IllustrateBinarySearch();
     }
 
     static void IllustrateArrayAsReadOnly()
