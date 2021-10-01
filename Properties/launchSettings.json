@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "HelloWorld": {
+      "commandName": "Project",
+      "commandLineArgs": "--file C:\\Users\\Mindaugas\\Desktop\\Projects\\BIT\\DotNetKursas\\FirstCSharpProjectDemo\\bin\\Debug\\net5.0\\out"
+    }
+  }
+}

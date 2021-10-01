@@ -1,61 +1,155 @@
 ﻿using System;
+using System.Text.RegularExpressions;
+using static System.IO.File;
+using static System.Console;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.IO;
 using System.Collections.Generic;
+using Microsoft.VisualBasic.FileIO;
+using System.Globalization;
+using CsvHelper;
 
-public class SamplesArray
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+class Program
 {
-    public static void Main()
+    static void Main(string[] args)
     {
-        //IllustrateArrayAsReadOnly();
-        //IllustrateClone();
-        //IllustrateForeach();
-        //IllustrateBinarySearch();
+        //_1ex_SimpleTools();
+        //_2ex_TextFieldParser();
+        //_3rd_CsvHelper();
+
+        var services = new ServiceCollection();
+        ConfigureServices(services);
+        ServiceProvider serviceProvider = services.BuildServiceProvider();
+        MyApplication app = serviceProvider.GetService<MyApplication>();
+        try
+        {
+            app.Start();
+        }
+        catch (Exception ex)
+        {
+            app.HandleError(ex);
+        }
+        finally
+        {
+            app.Stop();
+        }
+    }
+    private static void ConfigureServices(ServiceCollection services)
+    {
+        services.AddLogging(configure => configure.AddConsole())
+        .AddTransient<MyApplication>();
     }
 
-    static void IllustrateArrayAsReadOnly()
+    static void _1ex_SimpleTools()
     {
-        string[] myArr = { "The", "quick", "brown", "fox" };
-        Console.WriteLine("The string array initially contains the following values:");
-        IList<string> myList = Array.AsReadOnly(myArr);
-        Console.WriteLine("The read-only IList contains the following values:");
+        var ages = new List<int>();
+        using (StreamReader sr = new StreamReader(@".\test.csv"))
+        {
+            string currentLine;
+            int lineCounter = 0;
+            while ((currentLine = sr.ReadLine()) != null)
+            {
+                if (lineCounter++ == 0)
+                    continue;
+                var datafields = currentLine.Split(',');
+                ages.Add(int.Parse(datafields[^1]));
+            }
+        }
 
-        // Attempt to change a value through the wrapper.
-        myList[3] = "CAT";
-
-        // Change a value in the original array.
-        myArr[2] = "RED";
+        Console.WriteLine(calcAverage(ages));
     }
 
-    static void IllustrateClone()
+    static void _2ex_TextFieldParser()
     {
-        string[] myArr1 = { "The", "quick", "brown", "fox" };
-        string[] myArr2 = (string[])(myArr1.Clone());
-        //string[] myArr2 = myArr1;
+        using (TextFieldParser parser = new TextFieldParser(@".\test.csv"))
+        {
+            parser.TextFieldType = FieldType.Delimited;
+            parser.SetDelimiters(",");
+            while (!parser.EndOfData)
+            {
+                if (parser.LineNumber == 1)
+                {
+                    parser.ReadFields();
+                    continue;
+                }
 
-        Console.WriteLine(string.Join(", ", myArr1));
-        myArr1[3] = "wolf";
-        Console.WriteLine(string.Join(", ", myArr1));
-
-        Console.WriteLine(string.Join(", ", myArr2));
+                string[] fields = parser.ReadFields();
+                foreach (string field in fields)
+                {
+                    Console.WriteLine(field);
+                }
+            }
+        }
     }
 
-    static void IllustrateForeach()
+    static void _3rd_CsvHelper()
     {
-        string[] myArr1 = { "The", "quick", "brown", "fox" };
-        Console.WriteLine(string.Join(", ", myArr1));
-        Array.ForEach(myArr1, word => {
-            Console.Write(word.ToUpper() + ", ");
-        });
-        Console.WriteLine("\n" + string.Join(", ", myArr1));
+        using (var reader = new StreamReader(@".\test.csv"))
+        using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+        {
+            var records = csv.GetRecords<dynamic>();
+            foreach (var record in records)
+            {
+                Console.WriteLine(record.id);
+                Console.WriteLine(record.name);
+                Console.WriteLine(record.age);
+            }
+        }
     }
 
-    static void IllustrateBinarySearch()
+    static double calcAverage(List<int> arr)
     {
-        string[] myArr1 = { "The", "quick", "brown", "fox" };
-        Console.WriteLine("Before sorting: " + string.Join(", ", myArr1));
-        Array.Sort(myArr1);
-        Console.WriteLine("After sorting: " + string.Join(", ", myArr1));
+        int sum = 0;
+        foreach (var n in arr)
+            sum += n;
 
-        int idx = Array.BinarySearch(myArr1, "quick");
-        Console.WriteLine(idx > 0 ? myArr1[idx] : "Sorry, not found!");
+        return sum / arr.Count;
+    }
+}
+
+class MyApplication
+{
+    private readonly ILogger _logger;
+    public MyApplication(ILogger<MyApplication> logger)
+    {
+        _logger = logger;
+    }
+    public void Start()
+    {
+        _logger.LogInformation($"MyApplication Started at {DateTime.Now}");
+        LoadDashboard();
+    }
+
+    private void LoadDashboard()
+    {
+        try
+        {
+            _logger.LogWarning("MyApplication->LoadDashboard() can throw Exception!");
+            int[] a = new int[] { 1, 2, 3, 4, 5 };
+            int b = a[5];
+            Console.WriteLine($"Value of B: {b}");
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+        finally
+        {
+            _logger.LogCritical($"MyApplication->LoadDashboard() Code needs to be fixed");
+        }
+    }
+
+    public void Stop()
+    {
+        _logger.LogInformation($"MyApplication Stopped at {DateTime.Now}");
+    }
+
+    public void HandleError(Exception ex)
+    {
+        _logger.LogError($"MyApplication Error Encountered at {DateTime.Now} & Error is: {ex.Message}");
     }
 }
